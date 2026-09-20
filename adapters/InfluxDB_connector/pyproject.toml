@@ -1,0 +1,16 @@
+[project]
+name = "influxdb-connector"
+version = "0.1.0"
+description = "HTTP adapter for writing JSON data to InfluxDB"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard-no-fastapi-cloud-cli]>=0.141.1",
+]
+
+[project.scripts]
+influxdb-connector = "influxdb_connector:main"
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"

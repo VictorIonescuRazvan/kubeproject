@@ -1,0 +1,23 @@
+import "strings"
+
+from(bucket: "default-bucket")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r._field == "data")
+  |> group(columns: ["pod"])
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: 1)
+  |> keep(columns: ["pod", "_value"])
+  |> rename(columns: {_value: "data"})
+  |> map(fn: (r) => ({
+      r with
+      data: strings.replaceAll(
+        v: strings.substring(
+          v: r.data,
+          start: 2,
+          end: strings.strlen(v: r.data) - 1
+        ),
+        t: "\\n",
+        u: "\n"
+      )
+    }))
+  |> keep(columns: ["pod", "data"])

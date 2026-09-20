@@ -99,7 +99,9 @@ def _send_json(payload: dict[str, Any]) -> tuple[int, str]:
     request = HttpRequest(
         target,
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+        },
         method="POST",
     )
     _LOGGER.info("Sending data to message broker at %s", target)
@@ -180,8 +182,6 @@ async def publish_endpoint(request: Request) -> JSONResponse:
     _LOGGER.info("Calling engines.transform for submitted payload")
     processed_payload = _ENGINES.transform(payload)
     _LOGGER.info("Engines.transform completed")
-    _QUEUE.push_back(processed_payload)
-    _LOGGER.info("Queued processed payload")
     return JSONResponse(status_code=202, content={"status": "accepted"})
 
 

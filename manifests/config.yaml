@@ -66,10 +66,27 @@ spec:
     spec:
       containers:
         - name: message-broker
-          image: mock-listener:latest
+          image: influxdb-connector:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "8080"
+            - name: INFLUXDB_HOST
+              value: "influxdb"
+            - name: INFLUXDB_PORT
+              value: "8086"
+            - name: INFLUXDB_ORG
+              value: "default-org"
+            - name: INFLUXDB_BUCKET
+              value: "default-bucket"
+            - name: INFLUXDB_TOKEN
+              value: "influxdb-connector-token"
+            - name: INFLUXDB_MEASUREMENT
+              value: "logs"
 ---
 apiVersion: apps/v1
 kind: Deployment
