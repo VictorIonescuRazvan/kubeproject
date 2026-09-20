@@ -18,9 +18,10 @@ def configure_logging() -> None:
 def main() -> None:
     configure_logging()
 
-    for message_number in range(1, 4):
-        time.sleep(random.uniform(1, 3))
-        LOGGER.info("Success message %d", message_number)
+    while True:
+        for message_number in range(1, 4):
+            time.sleep(random.uniform(1, 3))
+            LOGGER.info("Success message %d", message_number)
 
 
 if __name__ == "__main__":

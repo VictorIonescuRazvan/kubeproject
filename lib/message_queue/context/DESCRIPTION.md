@@ -33,7 +33,7 @@ The aggregator's logic is split in the following steps:
 
 Not implemented in here. They receive data via a message broker from the aggregator. The aggregator is not aware of individual consumers. There is no confirmation that the data is received, and the aggregator performs no retransmission based on consumer availability. This does not exclude retransmission to the message broker.
 
-# Queue
+# Message Queue
 The queue is tasked with exposing a push_back, pop arguments. Push_back should be thread safe.
 
 Pushing back an object will enqueue a (datetime, object) pair. These will form a priority queue in function of the datetime, most recent at the head.

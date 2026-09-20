@@ -1,0 +1,24 @@
+[project]
+name = "aggregator"
+version = "0.1.0"
+description = "FastAPI aggregator for sensor data"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard-no-fastapi-cloud-cli]>=0.141.1",
+    "auth",
+    "engines",
+    "message_queue",
+]
+
+[tool.uv.sources]
+auth = { path = "../lib/auth" }
+engines = { path = "../lib/engines" }
+message_queue = { path = "../lib/message_queue" }
+
+[project.scripts]
+aggregator = "aggregator:main"
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"

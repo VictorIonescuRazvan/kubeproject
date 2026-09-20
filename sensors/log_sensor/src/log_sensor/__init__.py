@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import sys
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Protocol
 
 from kubernetes import client, config
@@ -76,6 +78,7 @@ class LogSensor:
         self.core_api = core_api
         self.context = context
         self.pods: dict[str, PodState] = {}
+        self.last_pull_times: dict[str, datetime] = {}
 
     @classmethod
     def create(cls) -> "LogSensor":
@@ -107,6 +110,7 @@ class LogSensor:
     def iterate(self) -> None:
         response = self.core_api.list_namespaced_pod(self.settings.namespace)
         current_names = {pod.metadata.name for pod in response.items if pod.metadata.name}
+        next_pull_times: dict[str, datetime] = {}
 
         for name in sorted(set(self.pods) - current_names):
             state = self.pods.pop(name)
@@ -114,11 +118,20 @@ class LogSensor:
 
         for name in sorted(current_names):
             state = self.pods.setdefault(name, PodState(name))
-            state.logs = self.core_api.read_namespaced_pod_log(
-                name=name,
-                namespace=self.settings.namespace,
-            )
+            pull_started_at = datetime.now(timezone.utc)
+            read_options = {
+                "name": name,
+                "namespace": self.settings.namespace,
+            }
+            last_pull_time = self.last_pull_times.get(name)
+            if last_pull_time is not None:
+                elapsed_seconds = (pull_started_at - last_pull_time).total_seconds()
+                read_options["since_seconds"] = max(1, math.ceil(elapsed_seconds))
+            state.logs = self.core_api.read_namespaced_pod_log(**read_options)
+            next_pull_times[name] = pull_started_at
             self._publish(name, state.logs)
+
+        self.last_pull_times = next_pull_times
 
     def _publish(self, pod_name: str, logs: str) -> None:
         payload = {

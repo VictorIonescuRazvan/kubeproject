@@ -1,5 +1,5 @@
 [project]
-name = "queue"
+name = "message_queue"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

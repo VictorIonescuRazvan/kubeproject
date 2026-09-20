@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aggregator-credentials
+  namespace: monitoring
+stringData:
+  API_KEY: "test-api-key"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-sensor-context
+  namespace: monitoring
+data:
+  context.txt: |
+    namespace: monitoring
+    source: kubernetes-pod-logs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aggregator
+  namespace: monitoring
+spec:
+  selector:
+    app: aggregator
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: message-broker
+  namespace: monitoring
+spec:
+  selector:
+    app: message-broker
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-broker
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-broker
+  template:
+    metadata:
+      labels:
+        app: message-broker
+    spec:
+      containers:
+        - name: message-broker
+          image: mock-listener:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aggregator
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aggregator
+  template:
+    metadata:
+      labels:
+        app: aggregator
+    spec:
+      containers:
+        - name: aggregator
+          image: aggregator:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aggregator-credentials
+                  key: API_KEY
+            - name: DESTINATION_IP
+              value: "message-broker"
+            - name: DESTINATION_PORT
+              value: "8080"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-sensor
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-sensor
+  template:
+    metadata:
+      labels:
+        app: log-sensor
+    spec:
+      serviceAccountName: log-sensor
+      containers:
+        - name: log-sensor
+          image: log-sensor:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CONTEXT
+              value: "/etc/log-sensor/context.txt"
+            - name: NAMESPACE
+              value: "apps"
+            - name: INTERVAL
+              value: "10"
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aggregator-credentials
+                  key: API_KEY
+            - name: AGGREGATOR_HOSTNAME
+              value: "http://aggregator.monitoring.svc.cluster.local:8000"
+          volumeMounts:
+            - name: sensor-context
+              mountPath: /etc/log-sensor
+              readOnly: true
+      volumes:
+        - name: sensor-context
+          configMap:
+            name: log-sensor-context
